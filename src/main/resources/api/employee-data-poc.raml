@@ -1,0 +1,19 @@
+#%RAML 1.0
+title: Employee-data-poc
+baseUri: http://localhost:8081/Employee-data-poc
+types:
+  EMP-details: !include Employee-details/Employee-details-schema.json
+/invokeData:
+  get:
+    queryParameters:
+      fetchData:
+        type: string
+    responses:
+      200:
+        body:
+          application/json:
+            example:  !include Employee-details/Employee-details.json
+            type: EMP-details[]
+
+              
+    
