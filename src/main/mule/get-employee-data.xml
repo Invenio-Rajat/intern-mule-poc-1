@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="9cb06791-5100-475b-9753-53c5f6f1a796" >
+		<http:request-connection host="dummy.restapiexample.com" />
+	</http:request-config>
+	<sftp:config name="SFTP_Config" doc:name="SFTP Config" doc:id="1d9f4ad5-6df0-45f3-af79-e1ff70c92d93" >
+		<sftp:connection host="192.168.4.138" username="invenio" password=" Invenio" prngAlgorithm="NativePRNG" workingDir="/orders"/>
+	</sftp:config>
+	<flow name="Implementation_Flow" doc:id="b2a871ba-77e4-4738-bad8-29a7d63110fc" >
+		<logger level="INFO" doc:name="Start-Loger" doc:id="9e631e9f-ff52-4dad-ba6f-4265d9d075b5" message="got a http request"/>
+		<http:request method="GET" doc:name="Request" doc:id="a94d943a-249a-4ad1-825a-19be9d0d8297" config-ref="HTTP_Request_configuration" path="/api/v1/employees"/>
+		<logger level="INFO" doc:name="json data going to transform" doc:id="31d9c294-9b80-4f1a-9a37-35ae37327075" message="json data fetched"/>
+		<ee:transform doc:name="Transform Message" doc:id="57f27745-4642-4ad9-8aca-36aff362b3cc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[output application/xml
+---
+"Employees" : ({
+    (payload.data filter($.employee_age >=60 ) map(( datum , indexOfDatum ) -> "Details" : {
+    no: datum.id as String,
+    name: datum.employee_name,
+    age: datum.employee_age ,
+    salary: datum.employee_salary as String
+})) 
+}) orderBy (-$.age)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="DEBUG" doc:name="End -Logger" doc:id="8ed8c901-b5a9-40dd-a4a9-79843ea77722" message="json converted to xml with validation"/>
+		<sftp:write doc:name="Write" doc:id="a134dbc7-01d3-467d-93b8-09cbd81b1f57" config-ref="SFTP_Config" path='#["POC1"++(now() as String{format:" yyyyMMdd-hhmmssSSS"})++".xml"]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="fb910f27-f227-4391-84a8-6055c755b341" message="end"/>
+	</flow>
+</mule>
